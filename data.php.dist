@@ -1,0 +1,14 @@
+<?php
+
+$versions = array(
+  '39' => array(
+    'old_core_version' => '3.9.1',
+    'old_lae_version'  => '19.0.0',
+  ),
+  '310' => array(
+    'old_core_version' => '3.10.1',
+    'new_core_version' => '3.10.2',
+    'old_lae_version'  => '20.0.0',
+    'new_lae_version'  => '20.0.1',
+  ),
+);
