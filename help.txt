@@ -1,0 +1,40 @@
+LAE AUTOMATOR HELP
+------------------
+Example: php lae.php <command> --remote=lae --major=311 --confirm-all
+
+Available commands:
+* beta-branches
+    Runs create-beta-branches, update-readme, merge-beta-branches, push-beta-branches.
+* sanity-diff
+    Runs the standard sanity diffs.
+* tag-n-push
+    Runs merge-main-branches, create-tags, push-main-branches, push-tags, cleanup-beta-branches.
+
+* create-beta-branches
+    Creates beta branches based on current STABLE & PACKAGE branches.
+* update-readme
+    Bumps the version numbers in LAE_readme.md.
+* merge-beta-branches
+    Merges the new tags into the beta branches.
+* push-beta-branches
+    Pushes the beta branches to the target remote.
+* merge-main-branches
+    Merges the main STABLE & PACKAGE forward to the corresponding beta branches.
+* create-tags
+    Creates tags at the current HEAD of the beta branches.
+* push-main-branches
+    Pushes the main STABLE & PACKAGE branches to the target remote.
+* push-tags
+    Pushes the tags to the target remote.
+* cleanup-beta-branches
+
+Options:
+* --remote=<remote>  (--remote=lae)
+    Sets the target remote name (defaults to 'origin')
+* --major=<major>    (--majore=310)
+    Sets the target major version (defaults to all major versions defined in data.php)
+* --confirm-all
+    Confirm all commands before running
+
+====================================
+

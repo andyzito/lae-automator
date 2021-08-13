@@ -4,52 +4,6 @@ include __DIR__ . '/data.php';
 
 class LAEAutomator {
     /**
-     * The help string for this CLI script.
-     *
-     * @var string
-     */
-    public $help = "\n
-LAE AUTOMATOR HELP
-------------------
-Example: php lae.php <command> --remote=lae --major=311 --confirm-all
-
-Available commands:
-* beta-branches
-    Runs create-beta-branches, update-readme, merge-beta-branches, push-beta-branches.
-* sanity-diff
-    Runs the standard sanity diffs.
-* tag-n-push
-    Runs merge-main-branches, create-tags, push-main-branches, push-tags, cleanup-beta-branches.
-
-* create-beta-branches
-    Creates beta branches based on current STABLE & PACKAGE branches.
-* update-readme
-    Bumps the version numbers in LAE_readme.md.
-* merge-beta-branches
-    Merges the new tags into the beta branches.
-* push-beta-branches
-    Pushes the beta branches to the target remote.
-* merge-main-branches
-    Merges the main STABLE & PACKAGE forward to the corresponding beta branches.
-* create-tags
-    Creates tags at the current HEAD of the beta branches.
-* push-main-branches
-    Pushes the main STABLE & PACKAGE branches to the target remote.
-* push-tags
-    Pushes the tags to the target remote.
-* cleanup-beta-branches
-
-Options:
-* --remote=<remote>  (--remote=lae)
-    Sets the target remote name (defaults to 'origin')
-* --major=<major>    (--majore=310)
-    Sets the target major version (defaults to all major versions defined in data.php)
-* --confirm-all
-    Confirm all commands before running
-
-====================================\n\n";
-
-    /**
      * Filtered array of passed CLI options.
      *
      * @var array
@@ -123,14 +77,7 @@ Options:
             $this->names->beta_branch_package = "${beta_branch}_PACKAGE";
 
             // Output the basics of names calculated above.
-            echo "
-MAJOR VERSION ${major}
-----------------------
-Remote:           {$this->remote}
-Stable branches:  {$this->names->branch_stable} => {$this->names->beta_branch_stable}
-Package branches: {$this->names->branch_package} => {$this->names->beta_branch_package}
-Tags:             {$this->names->old_lae_tag_package}[-base] => {$this->names->new_lae_tag_package}[-base]
-";
+            $this->major_version_header($major);
 
             // Check that the names were properly calculated.
             if (!$this->confirm('Is the above info accurate?')) {
@@ -145,7 +92,7 @@ Tags:             {$this->names->old_lae_tag_package}[-base] => {$this->names->n
     /**
      * Runs a specified LAE Automator command.
      *
-     * @var stdClass
+     * @param string $command The command identifier.
      */
     function runCommand($command) {
         $N = $this->names;
@@ -231,65 +178,26 @@ Tags:             {$this->names->old_lae_tag_package}[-base] => {$this->names->n
                 }
                 break;
             case 'update-readme':
-                // TODO: Escape period characters in below version strings.
-                $this->exec("sed -i '' 's/{$N->old_core_version}/{$N->new_core_version}/g' ./LAE_readme.md");
-                $this->exec("sed -i '' 's/{$N->old_lae_version}/{$N->new_lae_version}/g' ./LAE_readme.md");
+                $old_core_version_escd = preg_quote($N->old_core_version);
+                $new_core_version_escd = preg_quote($N->new_core_version);
+                $old_lae_version_escd = preg_quote($N->old_lae_version);
+                $new_lae_version_escd = preg_quote($N->new_lae_version);
+
+                $this->exec("sed -i '' 's/$old_core_version_escd/$new_core_version_escd/g' ./LAE_readme.md");
+                $this->exec("sed -i '' 's/$old_lae_version_escd/$new_lae_version_escd/g' ./LAE_readme.md");
                 $this->exec("git a LAE_readme.md; git commit -m 'Update LAE_readme.md'");
                 break;
             default:
-                $this->error("Invalid command '${command}'.");
+                $this->error("Invalid command '$command'.");
                 exit;
         }
     }
 
-    function print($text) {
-        echo "\n$text\n";
-    }
-
-    function bump($version) {
-        preg_match('/(\d+)\.(\d+)\.(\d+)/', $version, $matches);
-        if ( is_numeric( $matches[3] ) ) {
-            return $matches[1] . '.' . $matches[2] . '.' . strval($matches[3]+1);
-        }
-    }
-
-    function message($message) {
-        $this->print("...${message}");
-    }
-
-    function confirm($message, $default = true) {
-        $yn = $default ? '[Y/n]' : '[y/N]';
-        $confirm = readline("\n> ${message} ${yn}:");
-
-        if ( preg_match( '/^y|yes$/', strtolower( $confirm ) ) ) {
-            return true;
-        } elseif ( preg_match( '/^n|no$/', strtolower( $confirm ) ) ) {
-            return false;
-        } elseif ( empty( $confirm ) ){
-            return $default;
-        } else {
-            $this->confirm( $message, $default );
-        }
-    }
-
-    function exec( $cmd ) {
-        if ( $this->opts['confirm-all'] ) {
-            if ( !$this->confirm( "Run `${cmd}`?" ) ) {
-                $this->message( 'Skipping command' );
-                return;
-            }
-        } else {
-            $this->message( "${cmd}" );
-        }
-        shell_exec( $cmd );
-    }
-
-    function error($message) {
-        $this->print("!! ${message}");
-        echo $this->help;
-        exit;
-    }
-
+    /**
+     * Parse CLI args out into their proper places.
+     *
+     * @param string $cmd The shell command to run.
+     */
     function parse_args($args) {
         array_shift( $args );
 
@@ -305,6 +213,106 @@ Tags:             {$this->names->old_lae_tag_package}[-base] => {$this->names->n
         $this->remote = array_key_exists( 'remote', $_opts ) ? $_opts['remote'] : 'origin';
         $this->opts['major']  = array_key_exists( 'major', $_opts )  ? $_opts['major']  : '';
         $this->opts['confirm-all']  = array_key_exists( 'confirm-all', $_opts )  ? true  : false;
+    }
+
+    /**
+     * Output wrapper to ensure newlines.
+     *
+     * @param string $message Text to print.
+     */
+    function print($message) {
+        echo "\n$message\n";
+    }
+
+    /**
+     * Print wrapper for non-error, non-blocking info output.
+     *
+     * @param string $message Text to print.
+     */
+    function message($message) {
+        $this->print("...$message");
+    }
+
+    /**
+     * Print wrapper that displays error info and dies.
+     *
+     * @param string $message Text to print.
+     */
+    function error($message) {
+        $this->print("!! $message");
+        $this->help();
+        exit;
+    }
+
+    /**
+     * Outputs help text.
+     */
+    function help() {
+        $this->print( file_get_contents( __DIR__ . '/help.txt' ) );
+    }
+
+    /**
+     * Convenience wrapper to output calculated info for target major version.
+     */
+    function major_version_header($version) {
+        echo "
+MAJOR VERSION $version
+----------------------
+Remote:           {$this->remote}
+Stable branches:  {$this->names->branch_stable} => {$this->names->beta_branch_stable}
+Package branches: {$this->names->branch_package} => {$this->names->beta_branch_package}
+Tags:             {$this->names->old_lae_tag_package}[-base] => {$this->names->new_lae_tag_package}[-base]
+";
+    }
+
+    /**
+     * Print wrapper for requesting user confirmation.
+     *
+     * @param string $message Text to print.
+     * @param boolean $default Default value to return when user gives no input.
+     */
+    function confirm($message, $default = true) {
+        $yn = $default ? '[Y/n]' : '[y/N]';
+        $confirm = readline("\n> $message $yn:");
+
+        if ( preg_match( '/^y|yes$/', strtolower( $confirm ) ) ) {
+            return true;
+        } elseif ( preg_match( '/^n|no$/', strtolower( $confirm ) ) ) {
+            return false;
+        } elseif ( empty( $confirm ) ){
+            return $default;
+        } else {
+            $this->confirm( $message, $default );
+        }
+    }
+
+    /**
+     * Bump patch for a semantic version string.
+     *
+     * @param string $version Semantic version string like 3.11.2.
+     */
+    function bump($version) {
+        preg_match('/(\d+)\.(\d+)\.(\d+)/', $version, $matches);
+        if ( is_numeric( $matches[3] ) ) {
+            return $matches[1] . '.' . $matches[2] . '.' . strval($matches[3]+1);
+        }
+    }
+
+    /**
+     * Command exec wrapper to allow for 'confirm-all' functionality.
+     *
+     * @param string $cmd The shell command to run.
+     */
+    function exec( $cmd ) {
+        if ( $this->opts['confirm-all'] ) {
+            if ( !$this->confirm( "Run `$cmd`?" ) ) {
+                $this->message( 'Skipping command' );
+                return;
+            }
+        } else {
+            $this->message( $cmd );
+        }
+        shell_exec( $cmd );
     }
 }
 
