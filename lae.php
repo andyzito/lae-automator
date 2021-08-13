@@ -142,9 +142,14 @@ Tags:             {$this->names->old_lae_tag_package}[-base] => {$this->names->n
         }
     }
 
+    /**
+     * Runs a specified LAE Automator command.
+     *
+     * @var stdClass
+     */
     function runCommand($command) {
         $N = $this->names;
-        $this->message( 'Running {$command}' );
+        $this->message( "Running $command" );
         switch ($command) {
             case 'beta-branches':
                 $this->runCommand('create-beta-branches');
