@@ -216,6 +216,25 @@ class LAEAutomator {
     }
 
     /**
+     * Outputs help text.
+     */
+    function help() {
+        $this->print( file_get_contents( __DIR__ . '/help.txt' ) );
+    }
+
+    /**
+     * Convenience wrapper to output calculated info for target major version.
+     */
+    function major_version_header($version) {
+        $this->print("MAJOR VERSION $version
+----------------------
+Remote:           {$this->remote}
+Stable branches:  {$this->names->branch_stable} => {$this->names->beta_branch_stable}
+Package branches: {$this->names->branch_package} => {$this->names->beta_branch_package}
+Tags:             {$this->names->old_lae_tag_package}[-base] => {$this->names->new_lae_tag_package}[-base]");
+    }
+
+    /**
      * Output wrapper to ensure newlines.
      *
      * @param string $message Text to print.
@@ -242,27 +261,6 @@ class LAEAutomator {
         $this->print("!! $message");
         $this->help();
         exit;
-    }
-
-    /**
-     * Outputs help text.
-     */
-    function help() {
-        $this->print( file_get_contents( __DIR__ . '/help.txt' ) );
-    }
-
-    /**
-     * Convenience wrapper to output calculated info for target major version.
-     */
-    function major_version_header($version) {
-        echo "
-MAJOR VERSION $version
-----------------------
-Remote:           {$this->remote}
-Stable branches:  {$this->names->branch_stable} => {$this->names->beta_branch_stable}
-Package branches: {$this->names->branch_package} => {$this->names->beta_branch_package}
-Tags:             {$this->names->old_lae_tag_package}[-base] => {$this->names->new_lae_tag_package}[-base]
-";
     }
 
     /**
